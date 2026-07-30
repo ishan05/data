@@ -12,4 +12,5 @@ for path in sorted(Path(".").glob("*.drawio")):
     ElementTree.parse(path)
 PY
 
-git diff --check
+./scripts/ci-diff-check-test
+exec ./scripts/ci-diff-check

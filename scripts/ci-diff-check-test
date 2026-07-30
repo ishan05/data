@@ -1,0 +1,28 @@
+#!/bin/sh
+set -eu
+
+repo_root=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
+temporary=$(mktemp -d "${TMPDIR:-/tmp}/data-ci-diff.XXXXXX")
+trap 'rm -rf "$temporary"' EXIT HUP INT TERM
+
+mkdir "$temporary/scripts"
+cp "$repo_root/scripts/ci-diff-check" "$temporary/scripts/ci-diff-check"
+git -C "$temporary" init -q
+git -C "$temporary" config user.name "CI Contract Test"
+git -C "$temporary" config user.email "ci-contract@example.invalid"
+printf 'clean\n' > "$temporary/tracked.txt"
+git -C "$temporary" add tracked.txt
+git -C "$temporary" commit -qm base
+base_sha=$(git -C "$temporary" rev-parse HEAD)
+printf 'trailing whitespace \n' > "$temporary/tracked.txt"
+git -C "$temporary" add tracked.txt
+git -C "$temporary" commit -qm candidate
+head_sha=$(git -C "$temporary" rev-parse HEAD)
+
+if CI_BASE_SHA=$base_sha CI_HEAD_SHA=$head_sha \
+  "$temporary/scripts/ci-diff-check" > "$temporary/output" 2>&1; then
+  echo "committed trailing whitespace unexpectedly passed" >&2
+  exit 1
+fi
+
+grep 'trailing whitespace' "$temporary/output" >/dev/null

@@ -23,7 +23,10 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - run: ./scripts/ci-preflight
+      - env:
+          CI_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          CI_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: ./scripts/ci-preflight
 
   portable:
     name: Portable repository tests

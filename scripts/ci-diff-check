@@ -1,0 +1,33 @@
+#!/bin/sh
+set -eu
+
+repo_root=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
+cd "$repo_root"
+
+base_sha=${CI_BASE_SHA:-}
+head_sha=${CI_HEAD_SHA:-}
+
+if [ -z "$base_sha" ] && [ -z "$head_sha" ]; then
+  exec git diff --check
+fi
+
+validate_sha() {
+  name=$1
+  value=$2
+  case "$value" in
+    ''|*[!0-9a-f]*)
+      echo "$name must be a lowercase full Git commit SHA" >&2
+      exit 64
+      ;;
+  esac
+  if [ "${#value}" -ne 40 ]; then
+    echo "$name must be a lowercase full Git commit SHA" >&2
+    exit 64
+  fi
+  git cat-file -e "$value^{commit}"
+}
+
+validate_sha base_sha "$base_sha"
+validate_sha head_sha "$head_sha"
+
+exec git diff --check "$base_sha" "$head_sha" --
