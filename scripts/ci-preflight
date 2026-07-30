@@ -1,0 +1,15 @@
+#!/bin/sh
+set -eu
+
+repo_root=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
+cd "$repo_root"
+
+python3 - <<'PY'
+from pathlib import Path
+from xml.etree import ElementTree
+
+for path in sorted(Path(".").glob("*.drawio")):
+    ElementTree.parse(path)
+PY
+
+git diff --check
